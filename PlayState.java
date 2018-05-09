@@ -16,55 +16,35 @@ import wavesofterror.Towers.*;
 public class PlayState extends GameState {
 
 	public static final int MapSize = 4200;
-
-	public boolean[][] Walls;
-	public boolean PlacedWall;
-	public Tower[][] Towers;
-	public boolean PlacedTower;
-	public boolean CreateWalls = true;
-
 	public static final int WallSeperation = 35;
 
-	int Score;
+	boolean Paused;
 
-	int UpgradeCostWeapon = 400;
-	int UpgradeCostTowers = 300;
-
-	int Level = 1;
-
-	Vector2 CameraShake;
-	public int Wave = 1;
 	public static ArrayList<Enemy> Enemies;
 	public static ArrayList<ProjectileCluster> PJCs;
-
+	//Player Info
 	public static Vector2 PlayerPosition;
-	public static Vector2 PlayerDelta;
+	public Vector2 PlayerDelta;
 	public int PlayerSize = 30;
-
-	public static int BaseDamage = 12;
+	
+	//GameplayNumbers
+	int Score;
 	public double Gold = 100;
 	public double GoldPerSecond = 3;
 	public final int BaseBaseHealth = 30;
 	public int BaseHealth = BaseBaseHealth;
 
-	boolean Paused;
-	public int NumSlots = 3;
-	public Weapon[] Slots;
-	public int[] Cooldown;
-	public int BaseCoolDown = 250;
-	public int ActiveSlot = 0;
+	//Alerts
+	public String AlertText = "";
+	public int AlertOpacity = 0;
 
-	public static String AlertText = "";
-	public static int AlertOpacity = 0;
-
+	//Wave Control
 	int NextWaveTimer = 60000;
+	public int Wave = 1;
 
 	//UI
 	int UIWidth = 400;
-	int ActivePanel = -1;						//Towers, Walls, Weapons, Upgrades
 	public ArrayList<Button> BasicButtons;	//Towers, Walls, Weapons, Upgrades
-	int ActiveFormula;
-	String ActivesFormula;
 	public ArrayList<Button> FormulaPanel;
 	public Button CreateWall;
 	public Button SwapBuild;
@@ -72,11 +52,35 @@ public class PlayState extends GameState {
 	public ArrayList<Button> UpgradePanel;
 
 	//Action
-	boolean TakingAction;
+	int ActivePanel = -1;	//Towers, Walls, Weapons, Upgrades
 	int State = -1;			// PlaceWall, PlaceTower
+	
+	//Wall Panel
 	Vector2 FirstWall;		// Empty Until the first point is selected
-	int TowerSelected;		// Arrow, Cold, Fire, Stun, Return
+	public boolean[][] Walls;
+	public boolean PlacedWall;
+	public boolean CreateWalls = true;
+	
+	//Tower Panel
+	int Level = 1;
 	int SelectedLevel;
+	int TowerSelected;		// Arrow, Cold, Fire, Stun, Return
+	public Tower[][] Towers;
+	public boolean PlacedTower;
+
+	//Weapon Panel
+	public int BaseDamage = 12;
+	int ActiveFormula;
+	String ActivesFormula;
+	public int NumSlots = 3;
+	public Weapon[] Slots;
+	public int[] Cooldown;
+	public int BaseCoolDown = 250;
+	public int ActiveSlot = 0;
+	
+	//Upgrade Panel
+	int UpgradeCostWeapon = 400;
+	int UpgradeCostTowers = 300;
 
 	public PlayState(Renderer Render, StateManager Controller) {
 		super(Render, Controller);
@@ -380,7 +384,6 @@ public class PlayState extends GameState {
 				UpgradePanel.get(i).Draw(g);
 			}
 		}
-
 		//Draw Important Info
 		g.setFont(new Font("TimesRoman", Font.BOLD, 40));
 		g.setColor(new Color(212, 175, 55));
@@ -406,7 +409,7 @@ public class PlayState extends GameState {
 		g.drawLine((int) P1.GetX(), (int) P1.GetY() - 1, (int) P2.GetX(), (int) P2.GetY() - 1);
 	}
 
-	public static void Alert(String s) {
+	public void Alert(String s) {
 		AlertText = s;
 		AlertOpacity = 255;
 	}
@@ -454,13 +457,11 @@ public class PlayState extends GameState {
 	@Override
 	public void mousePressed(MouseEvent e) {
 		Vector2 MousePos = new Vector2(e.getX(), e.getY());
-		Vector2 Offset = jMath.GetOffset();
-		Vector2 OffsetMousePos = new Vector2(e.getX() + Offset.GetX(), e.getY() + Offset.GetY());
+		Vector2 OffsetMousePos = new Vector2(e.getX() + jMath.GetOffset().GetX(), e.getY() + jMath.GetOffset().GetY());
 		if (SwingUtilities.isLeftMouseButton(e)) {
 			if ((e.getX() < Renderer.WindowWidth - 400 && State == -1) || (ActivePanel == -1 && (MousePos.GetX() < UIWidth || MousePos.GetY() > 200))) {
 				if (Cooldown[ActiveSlot] <= 0) {
-					ProjectileCluster Shot = Slots[ActiveSlot].Shoot(PlayerPosition, OffsetMousePos);
-					PJCs.add(Shot);
+					PJCs.add(Slots[ActiveSlot].Shoot(PlayerPosition, OffsetMousePos));
 					Cooldown[ActiveSlot] = BaseCoolDown;
 				}
 			} else {
@@ -580,9 +581,7 @@ public class PlayState extends GameState {
 							} else if (x == FirstWall.GetX() || y == FirstWall.GetY()) {
 								boolean[][] BackupWalls = new boolean[Walls.length][Walls[0].length];
 								for (int i = 0; i < Walls.length; i++) {
-									for (int j = 0; j < Walls.length; j++) {
-										BackupWalls[i][j] = Walls[i][j];
-									}
+									System.arraycopy(Walls[i], 0, BackupWalls[i], 0, Walls.length);
 								}
 								if (x == FirstWall.GetX()) {
 									for (int i = Math.min(y, (int) FirstWall.GetY()); i <= Math.max(y, (int) FirstWall.GetY()); i++) {
